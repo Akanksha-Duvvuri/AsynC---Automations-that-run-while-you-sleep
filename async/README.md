@@ -23,7 +23,7 @@ I was that developer. I built this exact stack manually for a funded beverage st
 **The idea:** a founder logs in, connects the tools they already use or require, and describes what they want in plain English:
 
 ```
-user@async:~$ when someone pays on razorpay, whatsapp them a confirmation and generate a zoho invoice
+user@async:~$ when someone pays on razorpay, whatsapp them a confirmation with the following message "describe your message here..... " and generate a zoho invoice
 > analyzing workflow...
 > ✓ flow created — running in background
 ```
@@ -32,11 +32,11 @@ An AI agent interprets the instruction, builds the flow, and runs it. No Zapier 
 
 ## `$ cat business-model.md`
 
-**BYOK — Bring Your Own Keys.** Users already pay AiSensy, Razorpay, Brevo etc. directly. They paste their API keys into AsynC once (stored encrypted), and AsynC becomes the intelligence layer that connects everything.
+**BYOK — Bring Your Own Keys.** Users already pay AiSensy, Razorpay, Brevo etc. directly. They paste their API keys into AsynC once (stored encrypted and safe), and AsynC becomes the intelligence layer that connects everything.
 
 We never resell platform access, never touch their billing with those platforms, and never act as a payment middleman. What users pay for is the agent, the dashboard, and the hours they stop spending on manual ops.
 
-| Package | Price | Includes |
+| Package | Price | Includes | (tbd)
 |---|---|---|
 | `starter.pkg` | ₹2,000/mo | WhatsApp (AiSensy) · Email (Brevo) · Google Sheets |
 | `growth.pkg` | ₹4,500/mo | + Razorpay payments · Zoho Books invoicing |
@@ -78,43 +78,15 @@ async/
 - [ ] **Phase 4** — the agent: plain English → LangChain tools → running flows
 - [ ] **Phase 5** — email, Zoho, NimbusPost, Sheets integrations
 - [ ] **Phase 6** — first user onboarded (pilot with a real startup)
-- [ ] **Phase 7** — landing customers beyond the pilot
+- [ ] **Phase 7** — landing customers beyond the pilot (target - due 19th July)
 
 **v1 success metric:** one person sets up one automation flow without my help. Everything else is secondary.
 
-## `$ ./run-locally`
-
-```bash
-# frontend
-cd frontend
-npm install
-npm run dev          # → localhost:3000
-
-# backend (once Phase 2+ lands)
-cd backend
-pip install -r requirements.txt
-uvicorn main:app --reload   # → localhost:8000
-```
-
-Environment variables (`.env.local` / `.env`):
-
-```
-# frontend
-NEXTAUTH_SECRET=
-NEXTAUTH_URL=http://localhost:3000
-DATABASE_URL=            # Neon Postgres
-
-# backend
-ANTHROPIC_API_KEY=       # agent brain
-FERNET_KEY=              # credential encryption
-DATABASE_URL=
 ```
 
 ## `$ whoami`
 
-Built by **Akanksha**.
-Previously built the full pilot-program stack (payments, WhatsApp automation, invoicing, shipping) for a funded D2C beverage startup.
-
+Built by **Akanksha Duvvuri**. Converting experience into products.
 ---
 
 <div align="center">
