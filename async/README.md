@@ -14,14 +14,16 @@
 
 ## `$ cat about.md`
 
-Small startups in India run their operations across a patchwork of tools — AiSensy for WhatsApp, Razorpay for payments, Zoho Books for invoicing, NimbusPost for shipping, Brevo for email. Connecting them means either paying for expensive USD-priced automation tools that don't support Indian platforms, or hiring a developer to wire everything together by hand.
+So what is AsynC? as the name states - automations that run while you sleep, Automations that run while you do your work and busy with other things. 
+Small startups in India run their operations across a patchwork of tools - for example, Aisensy for Whatsapp messages, Razorpay for payments (or Stripe), Zoho Book for invoicing, NimbusPost or Raidshyp for shipping and many more. This tool helps you automate all of that without the need of someone to bridge the gap between your needs and the software required. 
+
 
 I was that developer. I built this exact stack manually for a funded beverage startup — every webhook, every integration, every edge case. AsynC is that experience turned into a product.
 
-**The idea:** a founder logs in, connects the tools they already use, and describes what they want in plain English:
+**The idea:** a founder logs in, connects the tools they already use or require, and describes what they want in plain English:
 
 ```
-you@async:~$ when someone pays on razorpay, whatsapp them a confirmation and generate a zoho invoice
+user@async:~$ when someone pays on razorpay, whatsapp them a confirmation and generate a zoho invoice
 > analyzing workflow...
 > ✓ flow created — running in background
 ```
@@ -110,13 +112,13 @@ DATABASE_URL=
 
 ## `$ whoami`
 
-Built solo by **Akanksha** — BTech CSE (AIML) '29, Hyderabad.
+Built by **Akanksha**.
 Previously built the full pilot-program stack (payments, WhatsApp automation, invoicing, shipping) for a funded D2C beverage startup.
 
 ---
 
 <div align="center">
 
-`all systems operational ●`
+`all systems operational`
 
 </div>
