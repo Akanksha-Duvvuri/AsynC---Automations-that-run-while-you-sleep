@@ -1,36 +1,122 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div align="center">
 
-## Getting Started
+# `AsynC_`
 
-First, run the development server:
+**Automation that runs while you sleep.**
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+*AI-powered workflow automation for Indian startups — BYOK, plain English, zero code.*
+
+`[ status: building v1 ]` · `[ stack: next.js + fastapi ]` · `[ location: hyderabad ]`
+
+</div>
+
+---
+
+## `$ cat about.md`
+
+Small startups in India run their operations across a patchwork of tools — AiSensy for WhatsApp, Razorpay for payments, Zoho Books for invoicing, NimbusPost for shipping, Brevo for email. Connecting them means either paying for expensive USD-priced automation tools that don't support Indian platforms, or hiring a developer to wire everything together by hand.
+
+I was that developer. I built this exact stack manually for a funded beverage startup — every webhook, every integration, every edge case. AsynC is that experience turned into a product.
+
+**The idea:** a founder logs in, connects the tools they already use, and describes what they want in plain English:
+
+```
+you@async:~$ when someone pays on razorpay, whatsapp them a confirmation and generate a zoho invoice
+> analyzing workflow...
+> ✓ flow created — running in background
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+An AI agent interprets the instruction, builds the flow, and runs it. No Zapier logic trees. No developer on retainer. It just runs — asynchronously, in the background, while they do their actual work. Hence the name.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## `$ cat business-model.md`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**BYOK — Bring Your Own Keys.** Users already pay AiSensy, Razorpay, Brevo etc. directly. They paste their API keys into AsynC once (stored encrypted), and AsynC becomes the intelligence layer that connects everything.
 
-## Learn More
+We never resell platform access, never touch their billing with those platforms, and never act as a payment middleman. What users pay for is the agent, the dashboard, and the hours they stop spending on manual ops.
 
-To learn more about Next.js, take a look at the following resources:
+| Package | Price | Includes |
+|---|---|---|
+| `starter.pkg` | ₹2,000/mo | WhatsApp (AiSensy) · Email (Brevo) · Google Sheets |
+| `growth.pkg` | ₹4,500/mo | + Razorpay payments · Zoho Books invoicing |
+| `scale.pkg` | ₹8,000/mo | + NimbusPost shipping · custom flows · priority support |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## `$ tree ./architecture`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+async/
+├── frontend/            # Next.js 15 (App Router) + TypeScript + Tailwind v4
+│   ├── landing page     # dot field, decrypt animations, terminal aesthetic
+│   ├── auth             # NextAuth — email + password
+│   └── dashboard        # integrations, flows, settings
+│
+├── backend/             # FastAPI (Python)
+│   ├── credentials      # Fernet-encrypted API key storage
+│   ├── webhooks         # Razorpay events in, automations out
+│   └── agent/           # LangChain — tools + agent pattern
+│       ├── send_whatsapp      (AiSensy)
+│       ├── send_email         (Brevo / Resend)
+│       ├── create_invoice     (Zoho Books)
+│       ├── create_shipment    (NimbusPost)
+│       └── sheets_read_write  (Google Sheets)
+│
+└── db/                  # PostgreSQL (Neon)
+    └── users · credentials · flows · runs
+```
 
-## Deploy on Vercel
+**Why two servers?** Next.js API routes run on serverless functions — fine for CRUD, wrong for long-running agent executions with multiple sequential tool calls. The FastAPI backend runs as a persistent process (Railway/Render) and the frontend talks to it over HTTP.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Why Python for the agent?** The AI tooling ecosystem (LangChain, LLM SDKs) is Python-first. The agent takes a plain-English instruction, decides which tools to call, executes them with the user's decrypted credentials, and logs the run.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## `$ cat roadmap.md`
+
+- [x] **Phase 0** — idea, business model, architecture
+- [x] **Phase 1** — landing page (intro screen, dot field, packages, workflow matcher)
+- [ ] **Phase 2** — auth + dashboard shell + encrypted credential storage
+- [ ] **Phase 3** — first real integration: Razorpay webhook → AiSensy WhatsApp
+- [ ] **Phase 4** — the agent: plain English → LangChain tools → running flows
+- [ ] **Phase 5** — email, Zoho, NimbusPost, Sheets integrations
+- [ ] **Phase 6** — first user onboarded (pilot with a real startup)
+- [ ] **Phase 7** — landing customers beyond the pilot
+
+**v1 success metric:** one person sets up one automation flow without my help. Everything else is secondary.
+
+## `$ ./run-locally`
+
+```bash
+# frontend
+cd frontend
+npm install
+npm run dev          # → localhost:3000
+
+# backend (once Phase 2+ lands)
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload   # → localhost:8000
+```
+
+Environment variables (`.env.local` / `.env`):
+
+```
+# frontend
+NEXTAUTH_SECRET=
+NEXTAUTH_URL=http://localhost:3000
+DATABASE_URL=            # Neon Postgres
+
+# backend
+ANTHROPIC_API_KEY=       # agent brain
+FERNET_KEY=              # credential encryption
+DATABASE_URL=
+```
+
+## `$ whoami`
+
+Built solo by **Akanksha** — BTech CSE (AIML) '29, Hyderabad.
+Previously built the full pilot-program stack (payments, WhatsApp automation, invoicing, shipping) for a funded D2C beverage startup.
+
+---
+
+<div align="center">
+
+`all systems operational ●`
+
+</div>
