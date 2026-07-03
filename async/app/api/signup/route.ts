@@ -1,0 +1,52 @@
+import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import { z } from "zod";
+import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import { users } from "@/db/schema";
+
+/**
+ * POST /api/signup
+ * Creates a user with a bcrypt-hashed password.
+ * Zod validates the body before anything touches the DB.
+ */
+
+const signupSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  name: z.string().min(1).max(60).optional(),
+});
+
+export async function POST(req: Request) {
+  const body = await req.json().catch(() => null);
+  const parsed = signupSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: parsed.error.issues[0].message },
+      { status: 400 }
+    );
+  }
+
+  const { email, password, name } = parsed.data;
+  const normalized = email.toLowerCase();
+
+  // Reject duplicate emails
+  const [existing] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, normalized));
+
+  if (existing) {
+    return NextResponse.json(
+      { error: "An account with this email already exists" },
+      { status: 409 }
+    );
+  }
+
+  const passwordHash = await bcrypt.hash(password, 12);
+
+  await db.insert(users).values({ email: normalized, passwordHash, name });
+
+  return NextResponse.json({ ok: true }, { status: 201 });
+}
