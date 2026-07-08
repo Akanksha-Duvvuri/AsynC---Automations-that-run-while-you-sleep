@@ -1,11 +1,12 @@
-export { default } from "next-auth/middleware";
+import { withAuth } from "next-auth/middleware";
 
 /**
- * First layer of route protection (same three-layer pattern as Bluprynt):
- * 1. this middleware — redirects logged-out users away from /dashboard
- * 2. the dashboard layout — server-side session check
- * 3. every API route — getServerSession check
+ * Layer 1 of route protection — redirects logged-out users
+ * away from /dashboard before the request even renders.
  */
+export default withAuth({
+  pages: { signIn: "/login" },
+});
 
 export const config = {
   matcher: ["/dashboard/:path*"],
