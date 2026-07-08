@@ -70,9 +70,6 @@ NEXTAUTH_SECRET=""   # generate: openssl rand -base64 32
 ENCRYPTION_KEY=""    # generate: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-⚠️ If you ever lose ENCRYPTION_KEY, every stored API key becomes
-unrecoverable. Back it up somewhere safe (password manager).
-
 ## 5. Push the schema to Neon
 
 ```bash
