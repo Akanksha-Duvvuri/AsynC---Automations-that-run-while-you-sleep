@@ -1,106 +1,96 @@
-# AsynC — Phase 2 Setup (auth + dashboard + encrypted credentials)
+# AsynC Backend — Setup
 
-## 1. Install new dependencies
+## 0. One schema change first (frontend repo)
 
-```bash
-npm install next-auth bcryptjs zod drizzle-orm @neondatabase/serverless
-npm install -D drizzle-kit @types/bcryptjs
+The agent stores its parsed plan on the flow. Add this column:
+
+**db/schema.ts** — add to the `flows` table:
+```ts
+import { jsonb } from "drizzle-orm/pg-core";  // add to the existing import
+
+// inside flows table:
+plan: jsonb("plan"),
 ```
 
-## 2. Merge these files into your project
-
-Everything here sits alongside your Phase 1 landing page files.
-`DotField.tsx` from Phase 1 is reused by the login/signup pages.
-
-```
-db/schema.ts                     ← tables: users, credentials, flows, runs
-db/index.ts                      ← drizzle + neon client
-drizzle.config.ts                ← project root
-middleware.ts                    ← project root (protects /dashboard)
-lib/auth.ts                      ← NextAuth options
-lib/crypto.ts                    ← AES-256-GCM encrypt/decrypt  ★ read this one
-lib/integrations.ts              ← the 7 supported platforms
-app/api/auth/[...nextauth]/route.ts
-app/api/signup/route.ts
-app/api/credentials/route.ts     ← ★ and this one
-app/api/flows/route.ts
-app/login/page.tsx
-app/signup/page.tsx
-app/dashboard/layout.tsx
-app/dashboard/page.tsx
-app/dashboard/integrations/page.tsx
-app/dashboard/flows/page.tsx
-app/dashboard/settings/page.tsx
-components/DashboardNav.tsx
-```
-
-## 3. Wrap the app in SessionProvider
-
-The settings page uses `useSession()`, which needs a provider.
-Create `components/Providers.tsx`:
-
-```tsx
-"use client";
-import { SessionProvider } from "next-auth/react";
-
-export default function Providers({ children }: { children: React.ReactNode }) {
-  return <SessionProvider>{children}</SessionProvider>;
-}
-```
-
-Then in `app/layout.tsx`, wrap children:
-
-```tsx
-<body className={...}>
-  <Providers>{children}</Providers>
-</body>
-```
-
-## 4. Environment variables — `.env.local`
-
-```bash
-# Neon — dashboard → connection string
-DATABASE_URL="postgresql://..."
-
-# NextAuth
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET=""   # generate: openssl rand -base64 32
-
-# Credential encryption — MUST be exactly 32 bytes base64
-ENCRYPTION_KEY=""    # generate: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
-```
-
-## 5. Push the schema to Neon
-
+Then push it:
 ```bash
 npx drizzle-kit push
 ```
 
-This creates the four tables. Check the Neon dashboard to confirm.
-
-## 6. Run it
+## 1. Backend environment
 
 ```bash
-npm run dev
+cd backend
+python -m venv venv
+source venv/bin/activate        # you're on Arch, so this just works
+pip install -r requirements.txt
 ```
 
-Flow to test:
-1. `/signup` → create account → lands in dashboard
-2. `/dashboard/integrations` → connect AiSensy with any fake key
-3. Check Neon: the `credentials.encrypted_key` column should be
-   gibberish like `sGf3...==.9dKl...==.pQ2x...==` — never plain text
-4. `/dashboard/flows` → create a flow → appears as `draft`
-5. Log out → try opening `/dashboard` directly → redirected to login
+Create `backend/.env`:
+```bash
+DATABASE_URL="postgresql://..."   # SAME Neon string as frontend
+ENCRYPTION_KEY=""                 # SAME base64 key as frontend .env.local — this is the bridge
+ANTHROPIC_API_KEY=""              # console.anthropic.com → API keys
+RAZORPAY_WEBHOOK_SECRET=""        # leave empty for local dev
+```
 
-## Reading order (core mechanics first)
+⚠️ ENCRYPTION_KEY must be IDENTICAL to the frontend's. Node encrypted
+the credentials; Python decrypts them with the same key. Different
+keys = InvalidTag errors everywhere.
 
-1. `lib/crypto.ts` — how AES-GCM works, the iv.cipher.tag format
-2. `app/api/credentials/route.ts` — session scoping + encryption in action
-3. `lib/auth.ts` — how the user id travels: DB → JWT → session
-4. `middleware.ts` + `dashboard/layout.tsx` — the protection layers
+## 2. Run it
 
-## What's intentionally NOT here (next phases)
+```bash
+uvicorn main:app --reload --port 8000
+```
 
-- Password change + account deletion APIs (TODOs in settings page — good solo practice)
-- Razorpay webhook receiver (Phase 3 — first FastAPI piece)
-- The agent (Phase 4)
+Check: http://localhost:8000/health → `{"status":"operational"}`
+Bonus: http://localhost:8000/docs → FastAPI gives you free interactive API docs.
+
+## 3. Test the full Day-1 pipe WITHOUT Razorpay
+
+Simulate a payment webhook with curl (grab your user id from the
+Neon users table):
+
+```bash
+curl -X POST http://localhost:8000/webhooks/razorpay/YOUR_USER_ID \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event": "payment.captured",
+    "payload": { "payment": { "entity": {
+      "contact": "+91XXXXXXXXXX",
+      "amount": 5900
+    }}}
+  }'
+```
+
+Expected on first try: `{"ok": true, "executed": []}` — empty because
+your flow is still `draft` with no plan. That's correct behavior.
+
+## 4. Activate a flow (Day 2 — needs ANTHROPIC_API_KEY)
+
+```bash
+# flow id from the Neon flows table
+curl -X POST http://localhost:8000/flows/YOUR_FLOW_ID/activate
+```
+
+You'll get back the parsed plan. Look at it — this is the LLM's only
+job in the whole system. If campaign_name says "<ASK_USER>", edit the
+plan row in Neon and put your real AiSensy campaign name (building the
+UI for this is a later task).
+
+Re-run the curl from step 3 — this time `executed` should contain your
+flow id, a real WhatsApp should arrive, and the runs table gets a row.
+
+## 5. Real Razorpay webhooks (when ready)
+
+Local tunneling: `ngrok http 8000`, then in the Razorpay dashboard add
+webhook URL `https://xxx.ngrok.io/webhooks/razorpay/YOUR_USER_ID`,
+event `payment.captured`, set a secret, and put that secret in .env.
+
+## Reading order
+
+1. security.py       — the Node↔Python encryption bridge (smallest, most important)
+2. main.py           — the webhook execution path, top to bottom
+3. agent/parser.py   — the entire "AI" in ~40 lines
+4. db.py             — plain SQL, no ORM, so you see exactly what runs
